@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.egg-info/
+
+# Local/demo runtime outputs
+.env
+.env.*
+!.env.example
+data/
+exports/
+output/
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.wav
+*.mp3
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
