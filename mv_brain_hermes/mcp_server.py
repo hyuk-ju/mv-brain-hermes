@@ -14,6 +14,7 @@ try:
 except Exception as exc:  # pragma: no cover - exercised only without optional dep
     raise SystemExit("MCP support requires `python3 -m pip install -e '.[mcp]'`") from exc
 
+from .core import export_clip_pack as _export_clip_pack
 from .core import export_clips as _export_clips
 from .core import export_cutlist as _export_cutlist
 from .core import export_preview_manifest as _export_preview_manifest
@@ -50,6 +51,12 @@ def search_clips(query: str, clips_path: str | None = None, limit: int = 10, sou
 def export_cutlist(query: str, out_dir: str, clips_path: str | None = None, limit: int = 10, source_type: str | None = None) -> dict[str, Any]:
     """Export matching clips as JSON/CSV cut lists."""
     return _export_cutlist(query=query, clips_path=_default_clips(clips_path), out_dir=out_dir, limit=limit, source_type=source_type)
+
+
+@mcp.tool()
+def export_clip_pack(query: str, out_dir: str, clips_path: str | None = None, limit: int = 8) -> dict[str, Any]:
+    """Export JSON/CSV cut list, preview manifest, and README as an agent/editor handoff pack."""
+    return _export_clip_pack(query=query, clips_path=_default_clips(clips_path), out_dir=out_dir, limit=limit)
 
 
 @mcp.tool()

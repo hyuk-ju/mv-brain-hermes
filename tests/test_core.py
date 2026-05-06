@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from mv_brain_hermes.core import export_clips, export_cutlist, export_preview_manifest, search_clips
+from mv_brain_hermes.core import export_clip_pack, export_clips, export_cutlist, export_preview_manifest, search_clips
 from mv_brain_hermes.demo import write_demo
 
 
@@ -38,3 +38,26 @@ def test_preview_manifest(tmp_path: Path) -> None:
     out = export_preview_manifest("high energy", clips_path, tmp_path / "preview", limit=2)
     assert out["clip_count"] >= 1
     assert out["duration"] > 0
+
+
+def test_export_clip_pack_writes_agent_and_editor_handoff(tmp_path: Path) -> None:
+    clips_path = tmp_path / "clips.json"
+    write_demo(clips_path)
+
+    out = export_clip_pack("chorus", clips_path, tmp_path / "pack", limit=3)
+
+    assert out["clip_count"] >= 1
+    assert Path(out["cutlist_json"]).exists()
+    assert Path(out["cutlist_csv"]).exists()
+    assert Path(out["preview_manifest"]).exists()
+    assert Path(out["readme"]).exists()
+
+    readme = Path(out["readme"]).read_text(encoding="utf-8")
+    assert "Agent-readable clip pack" in readme
+    assert "For editors" in readme
+    assert "For agents" in readme
+    assert "MP4 rendering is opt-in" in readme
+
+    preview = json.loads(Path(out["preview_manifest"]).read_text(encoding="utf-8"))
+    assert preview["query"] == "chorus"
+    assert preview["clips"]

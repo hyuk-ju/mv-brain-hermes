@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .core import export_clips, export_cutlist, export_preview_manifest, list_clips, search_clips
+from .core import export_clip_pack, export_clips, export_cutlist, export_preview_manifest, list_clips, search_clips
 from .demo import write_demo
 
 
@@ -37,6 +37,12 @@ def build_parser() -> argparse.ArgumentParser:
     cutlist.add_argument("--limit", type=int, default=10)
     cutlist.add_argument("--source-type", default=None)
 
+    pack = sub.add_parser("export-pack", help="write agent/editor handoff pack: cutlist JSON/CSV, preview manifest, README")
+    pack.add_argument("query")
+    pack.add_argument("--clips", default=None)
+    pack.add_argument("--out", required=True)
+    pack.add_argument("--limit", type=int, default=8)
+
     clips = sub.add_parser("export-clips", help="write cut list and optionally render MP4 clips")
     clips.add_argument("query")
     clips.add_argument("--clips", default=None)
@@ -63,6 +69,8 @@ def main(argv: list[str] | None = None) -> int:
         _print(search_clips(args.query, args.clips, args.limit, args.source_type))
     elif args.command == "export-cutlist":
         _print(export_cutlist(args.query, args.clips, args.out, args.limit, args.source_type))
+    elif args.command == "export-pack":
+        _print(export_clip_pack(args.query, args.clips, args.out, args.limit))
     elif args.command == "export-clips":
         _print(export_clips(args.query, args.clips, args.out, args.limit, args.render, reencode=not args.copy))
     elif args.command == "export-preview":

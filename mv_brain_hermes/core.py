@@ -129,6 +129,43 @@ def export_clips(query: str, clips_path: str | Path | None, out_dir: str | Path,
     return manifest
 
 
+def _write_clip_pack_readme(out: Path, query: str, clip_count: int, duration: float) -> Path:
+    readme_path = out / "README.md"
+    readme_path.write_text("\n".join([
+        f"# Agent-readable clip pack: {query}",
+        "",
+        "This folder is a universal handoff package for MV BRAIN search results.",
+        "It is designed to be useful even when Final Cut Pro is not available.",
+        "",
+        "## Contents",
+        "",
+        "- `cutlist.csv` — spreadsheet-friendly edit list for editors.",
+        "- `cutlist.json` — structured context for agents, scripts, and MCP clients.",
+        "- `preview_manifest.json` — rough-cut timeline order before any render step.",
+        "- `render_manifest.json` — created by `export-clips`; records render/skipped results.",
+        "",
+        "## For editors",
+        "",
+        f"- Query: `{query}`",
+        f"- Selected clips: {clip_count}",
+        f"- Preview timeline duration: {duration:.3f}s",
+        "- Open `cutlist.csv` in a spreadsheet or hand it to Premiere, DaVinci, CapCut, or a manual edit workflow.",
+        "",
+        "## For agents",
+        "",
+        "- Read `cutlist.json` for ranked clip metadata and source timecodes.",
+        "- Read `preview_manifest.json` for timeline offsets and sequence order.",
+        "- Use `source_path`, `start_time`, and `end_time` only as explicit local-media instructions.",
+        "",
+        "## Rendering",
+        "",
+        "MP4 rendering is opt-in. Run `mv-brain-hermes export-clips ... --render` only when `source_path` points at allowed local video files.",
+        "Without `--render`, this pack is metadata-only and does not touch media.",
+        "",
+    ]), encoding="utf-8")
+    return readme_path
+
+
 def export_preview_manifest(query: str, clips_path: str | Path | None, out_dir: str | Path, limit: int = 8) -> dict[str, Any]:
     matches = search_clips(query=query, clips_path=clips_path, limit=limit)
     out = Path(out_dir).expanduser()
@@ -142,3 +179,22 @@ def export_preview_manifest(query: str, clips_path: str | Path | None, out_dir: 
     path = out / "preview_manifest.json"
     path.write_text(json.dumps({"query": query, "duration": round(total, 3), "clips": timeline}, indent=2, ensure_ascii=False), encoding="utf-8")
     return {"manifest": str(path), "clip_count": len(timeline), "duration": round(total, 3)}
+
+
+def export_clip_pack(query: str, clips_path: str | Path | None, out_dir: str | Path, limit: int = 8) -> dict[str, Any]:
+    """Write the universal editor/agent handoff pack for a search query."""
+    out = Path(out_dir).expanduser()
+    cutlist = export_cutlist(query=query, clips_path=clips_path, out_dir=out, limit=limit)
+    preview = export_preview_manifest(query=query, clips_path=clips_path, out_dir=out, limit=limit)
+    readme = _write_clip_pack_readme(out, query=query, clip_count=cutlist["clip_count"], duration=float(preview["duration"]))
+    return {
+        "out_dir": str(out),
+        "query": query,
+        "clip_count": cutlist["clip_count"],
+        "cutlist_json": cutlist["json"],
+        "cutlist_csv": cutlist["csv"],
+        "preview_manifest": preview["manifest"],
+        "readme": str(readme),
+        "duration": preview["duration"],
+        "render": False,
+    }
