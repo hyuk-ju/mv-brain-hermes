@@ -1,6 +1,8 @@
 # MV BRAIN Hermes Adapter
 
-A small **Hermes/MCP adapter** for local-first music-video clip retrieval and
+[한국어 README](README.ko.md)
+
+A small **CLI + Hermes/MCP adapter** for local-first music-video clip retrieval and
 cut exports. It is separate from the main [`mv-brain`](https://github.com/hyuk-ju/mv-brain)
 repo so it can stay focused on agent integration.
 
