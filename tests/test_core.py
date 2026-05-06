@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
-from mv_brain_hermes.core import export_clip_pack, export_clips, export_cutlist, export_preview_manifest, search_clips
+from mv_brain_hermes.core import export_clip_pack, export_clips, export_cutlist, export_preview_manifest, search_clips, write_cutlist
 from mv_brain_hermes.demo import write_demo
 
 
@@ -61,3 +62,31 @@ def test_export_clip_pack_writes_agent_and_editor_handoff(tmp_path: Path) -> Non
     preview = json.loads(Path(out["preview_manifest"]).read_text(encoding="utf-8"))
     assert preview["query"] == "chorus"
     assert preview["clips"]
+
+
+def test_cutlist_csv_neutralizes_spreadsheet_formulas(tmp_path: Path) -> None:
+    clips = [{
+        "id": "=cmd",
+        "source": "+source.mp4",
+        "source_path": "@/tmp/source.mp4",
+        "start_time": " \t=1+1",
+        "end_time": "\r+2+2",
+        "duration": "\n-3+3",
+        "labels": ["-danger"],
+        "description": "=HYPERLINK(\"https://example.invalid\")",
+        "score": "@SUM(1,1)",
+    }]
+
+    out = write_cutlist(clips, tmp_path / "exports", "danger")
+    with Path(out["csv"]).open(encoding="utf-8", newline="") as handle:
+        row = next(csv.DictReader(handle))
+
+    assert row["id"] == "'=cmd"
+    assert row["source"] == "'+source.mp4"
+    assert row["source_path"] == "'@/tmp/source.mp4"
+    assert row["start_time"] == "' \t=1+1"
+    assert row["end_time"] == "'\r+2+2"
+    assert row["duration"] == "'\n-3+3"
+    assert row["labels"] == "'-danger"
+    assert row["description"].startswith("'=HYPERLINK")
+    assert row["score"] == "'@SUM(1,1)"

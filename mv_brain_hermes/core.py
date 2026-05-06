@@ -55,6 +55,14 @@ def _slug(value: str) -> str:
     return "".join(allowed).strip("-") or "clip"
 
 
+def _csv_safe(value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    if value and value.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
+
 def write_cutlist(clips: list[dict[str, Any]], out_dir: str | Path, query: str) -> dict[str, Any]:
     out = Path(out_dir).expanduser()
     out.mkdir(parents=True, exist_ok=True)
@@ -68,15 +76,15 @@ def write_cutlist(clips: list[dict[str, Any]], out_dir: str | Path, query: str) 
         writer.writeheader()
         for clip in clips:
             writer.writerow({
-                "id": clip.get("id", ""),
-                "source": clip.get("source", ""),
-                "source_path": clip.get("source_path", ""),
-                "start_time": clip.get("start_time", ""),
-                "end_time": clip.get("end_time", ""),
-                "duration": clip.get("duration", ""),
-                "labels": ",".join(clip.get("labels", [])),
-                "description": clip.get("description", ""),
-                "score": clip.get("score", ""),
+                "id": _csv_safe(clip.get("id", "")),
+                "source": _csv_safe(clip.get("source", "")),
+                "source_path": _csv_safe(clip.get("source_path", "")),
+                "start_time": _csv_safe(clip.get("start_time", "")),
+                "end_time": _csv_safe(clip.get("end_time", "")),
+                "duration": _csv_safe(clip.get("duration", "")),
+                "labels": _csv_safe(",".join(clip.get("labels", []))),
+                "description": _csv_safe(clip.get("description", "")),
+                "score": _csv_safe(clip.get("score", "")),
             })
     readme_path.write_text("\n".join([
         f"# Cut list: {query}",
