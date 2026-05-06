@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .bridge import export_qdrant_snapshot, init_hermes_files
 from .core import export_clip_pack, export_clips, export_cutlist, export_preview_manifest, list_clips, search_clips
 from .demo import write_demo
 
@@ -24,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     listing.add_argument("--limit", type=int, default=50)
     listing.add_argument("--source-type", default=None)
 
-    search = sub.add_parser("search", help="search clips by natural-language keywords")
+    search = sub.add_parser("search", help="search clips by keyword, label, and description text")
     search.add_argument("query")
     search.add_argument("--clips", default=None)
     search.add_argument("--limit", type=int, default=10)
@@ -56,6 +57,17 @@ def build_parser() -> argparse.ArgumentParser:
     preview.add_argument("--clips", default=None)
     preview.add_argument("--out", required=True)
     preview.add_argument("--limit", type=int, default=8)
+
+    snapshot = sub.add_parser("snapshot-qdrant", help="export MV BRAIN Qdrant clip_archive payloads to portable clips.json")
+    snapshot.add_argument("--out", required=True)
+    snapshot.add_argument("--collection", default="clip_archive")
+    snapshot.add_argument("--limit", type=int, default=1000)
+
+    init = sub.add_parser("init-hermes", help="write Hermes skill, MCP config snippet, and quickstart files")
+    init.add_argument("--out", default="hermes_onboarding")
+    init.add_argument("--repo-path", default=str(Path.cwd()))
+    init.add_argument("--clips", default="data/mvbrain/clips.json")
+    init.add_argument("--repo-url", default="https://github.com/hyuk-ju/mv-brain-hermes.git")
     return parser
 
 
@@ -75,6 +87,10 @@ def main(argv: list[str] | None = None) -> int:
         _print(export_clips(args.query, args.clips, args.out, args.limit, args.render, reencode=not args.copy))
     elif args.command == "export-preview":
         _print(export_preview_manifest(args.query, args.clips, args.out, args.limit))
+    elif args.command == "snapshot-qdrant":
+        _print(export_qdrant_snapshot(args.out, args.collection, args.limit))
+    elif args.command == "init-hermes":
+        _print(init_hermes_files(args.out, args.repo_path, args.clips, args.repo_url))
     return 0
 
 

@@ -11,6 +11,21 @@ from typing import Any
 from .models import Clip, clip_from_dict
 
 
+def ensure_within_root(path: str | Path, root: str | Path) -> Path:
+    """Resolve a user path and reject writes outside an allowed root."""
+    resolved = Path(path).expanduser().resolve()
+    root_resolved = Path(root).expanduser().resolve()
+    try:
+        resolved.relative_to(root_resolved)
+    except ValueError as exc:
+        raise ValueError(f"path `{resolved}` is outside allowed root `{root_resolved}`") from exc
+    return resolved
+
+
+def render_enabled_for_mcp() -> bool:
+    return os.getenv("MV_BRAIN_ENABLE_RENDER", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def load_clips(path: str | Path | None = None) -> list[Clip]:
     selected = Path(path or os.getenv("MV_BRAIN_CLIPS_PATH", "./data/demo/clips.json")).expanduser()
     payload = json.loads(selected.read_text(encoding="utf-8"))
@@ -143,7 +158,7 @@ def _write_clip_pack_readme(out: Path, query: str, clip_count: int, duration: fl
         f"# Agent-readable clip pack: {query}",
         "",
         "This folder is a universal handoff package for MV BRAIN search results.",
-        "It is designed to be useful even when Final Cut Pro is not available.",
+        "It is designed to be useful even when editor-specific project export is not available.",
         "",
         "## Contents",
         "",
@@ -157,7 +172,7 @@ def _write_clip_pack_readme(out: Path, query: str, clip_count: int, duration: fl
         f"- Query: `{query}`",
         f"- Selected clips: {clip_count}",
         f"- Preview timeline duration: {duration:.3f}s",
-        "- Open `cutlist.csv` in a spreadsheet or hand it to Premiere, DaVinci, CapCut, or a manual edit workflow.",
+        "- Open `cutlist.csv` in a spreadsheet or use it as a simple MP4 selection handoff.",
         "",
         "## For agents",
         "",
